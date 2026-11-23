@@ -6,9 +6,42 @@ description: Escribir y validar guiones/especificaciones de Reels (video vertica
 # Guion y especificación de Reels
 
 > NOTA DE INSTALACIÓN: esta skill se instaló a partir de un fragmento. Las secciones 1–5 y el inicio
-> de la 6 (definición del esquema YAML, proceso creativo, etc.) no se proporcionaron. Los campos
-> referenciados abajo (`duration_s`, `scenes[]`, `scenes[].voiceover`, `voiceover_full`, `cta`,
-> `assets`, `verification`, `production_gate`) se usan tal como aparecen en el texto original.
+> de la 6 (definición del esquema YAML, proceso creativo, etc.) no se proporcionaron. El esquema de
+> abajo es provisional: lo usa `scripts/validate_video_spec.py` hasta que se incorporen esas secciones.
+
+## Esquema YAML (provisional)
+
+Los campos de nivel superior y `scenes[].voiceover` vienen del texto original; `start_s`, `end_s`,
+`on_screen_text`, `evidence` y la estructura de `verification` son supuestos. Si las secciones 1–5
+definen otros nombres, prevalecen: ajustar las constantes al inicio del validador.
+
+```yaml
+duration_s: 7                            # duración total en segundos
+scenes:                                  # intervalos consecutivos de 0 a duration_s
+  - id: 1                                # opcional
+    start_s: 0
+    end_s: 3
+    voiceover: "Locución de la escena uno."   # "" o null si la escena es muda
+    on_screen_text: "Texto en pantalla"       # texto o lista
+    evidence: REAL_VERIFICADO                 # REAL_VERIFICADO | DEMO | CONCEPTO | PENDIENTE
+  - id: 2
+    start_s: 3
+    end_s: 7
+    voiceover: ""
+    on_screen_text: ["CONCEPTO", "Ejemplo ilustrativo"]   # SIMULACIÓN/CONCEPTO visible
+    evidence: CONCEPTO
+voiceover_full: "Locución de la escena uno."  # unión de voiceover no vacíos; "" si es mudo
+cta: null                                # null o una sola acción del Proyecto
+assets: []                               # solo recursos confirmados
+verification:
+  claims:
+    - claim: "Afirmación visible o hablada"
+      status: REAL_VERIFICADO            # mismas etiquetas que evidence
+      source: "Prueba documentada"       # obligatoria si REAL_VERIFICADO
+      checked_on: "2026-11-23"           # fecha de la comprobación
+  blockers: []                           # lo que impide pasar a producción
+production_gate: PENDIENTE_VERIFICACION  # o APTO_PARA_PRODUCCION
+```
 
 ## 6. Validación antes de entregar
 
@@ -23,6 +56,12 @@ description: Escribir y validar guiones/especificaciones de Reels (video vertica
 - `production_gate = APTO_PARA_PRODUCCION` solo si las afirmaciones visibles están sustentadas o identificadas como simulación y la especificación es realizable; en caso contrario, `PENDIENTE_VERIFICACION`. Apto para producción NO significa revisado ni listo para publicar.
 
 Si existe el archivo `scripts/validate_video_spec.py` y hay YAML guardado en disco con Python + PyYAML disponibles, ejecutar el validador para verificar tiempos y coherencia formal. No detener la tarea si no hay ejecución: validar manualmente.
+
+Uso: `python3 <directorio de esta skill>/scripts/validate_video_spec.py spec.yaml [--max-wps 3.0]`.
+Salida 0 = sin errores (puede haber avisos), 1 = errores, 2 = archivo ilegible o falta PyYAML.
+Los ERROR se corrigen antes de entregar. Los AVISO (palabras/segundo, tramos > 4 s, CONCEPTO sin
+rótulo, posibles placeholders) son heurísticos: revisarlos y decidir, no corregirlos a ciegas.
+El umbral de 3 palabras/s es una referencia inicial, no una norma: ajustarlo al ritmo real de la locución.
 
 ## 7. Integridad de la evidencia, seguridad y publicación
 
